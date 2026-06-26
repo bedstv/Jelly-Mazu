@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>馬祖景點地圖總覽｜互動版</title>
+  <meta name="description" content="馬祖南竿、北竿、東引景點與美食 Google Maps 快速連結。" />
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #5e6b82;
+      --line: #dbe3f0;
+      --blue: #0f63bd;
+      --green: #1d8b4c;
+      --orange: #d57900;
+      --purple: #7c42b6;
+      --food: #f08a00;
+      --port: #1b78d0;
+      --shadow: 0 14px 34px rgba(25, 35, 54, .10);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(80, 159, 219, .22), transparent 28rem),
+        linear-gradient(180deg, #fbfcff 0%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    a { color: inherit; }
+
+    .page {
+      width: min(1440px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 20px 0 34px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4.7vw, 4.35rem);
+      line-height: 1.05;
+      letter-spacing: -0.05em;
+    }
+
+    .sub {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: clamp(.95rem, 1.6vw, 1.1rem);
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      max-width: 660px;
+      padding: 10px;
+      background: rgba(255,255,255,.78);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 7px 11px;
+      color: #25324a;
+      font-size: .92rem;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .islands {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .island {
+      position: relative;
+      overflow: hidden;
+      min-height: 760px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(61, 135, 190, .22);
+      background: linear-gradient(180deg, #cfefff 0%, #bfe5f4 100%);
+      box-shadow: var(--shadow);
+    }
+
+    .island::before {
+      content: "";
+      position: absolute;
+      inset: 18px 18px 210px;
+      background: rgba(255,255,255,.28);
+      border-radius: 24px;
+      pointer-events: none;
+    }
+
+    .tag {
+      position: absolute;
+      z-index: 3;
+      top: 18px;
+      left: 18px;
+      padding: 8px 20px;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.55rem;
+      letter-spacing: .02em;
+      box-shadow: 0 8px 22px rgba(0,0,0,.16);
+    }
+
+    .nangan .tag { background: var(--blue); }
+    .beigan .tag { background: var(--green); }
+    .dongyin .tag { background: var(--orange); }
+
+    .island-shape {
+      position: absolute;
+      z-index: 1;
+      inset: 88px 38px 260px;
+      filter: drop-shadow(0 9px 16px rgba(41,85,87,.18));
+    }
+
+    .island-shape svg { width: 100%; height: 100%; display: block; }
+
+    .road {
+      position: absolute;
+      z-index: 2;
+      height: 3px;
+      background: rgba(255,255,255,.85);
+      border-radius: 99px;
+      transform-origin: 0 50%;
+      box-shadow: 0 0 0 1px rgba(115, 153, 151, .12);
+    }
+
+    .mark {
+      position: absolute;
+      z-index: 4;
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 900;
+      font-size: .98rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,.20);
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+
+    .mark:hover,
+    .mark:focus-visible {
+      transform: translateY(-3px) scale(1.08);
+      box-shadow: 0 8px 18px rgba(0,0,0,.28);
+      outline: 3px solid rgba(255,255,255,.9);
+    }
+
+    .mark.scenic { background: var(--purple); }
+    .mark.food { background: var(--food); }
+    .mark.port { background: var(--port); font-size: 1.05rem; }
+    .mark.culture { background: #bf4968; }
+    .mark.view { background: #4aa25f; }
+    .mark.history { background: #9a7044; }
+
+    .label {
+      position: absolute;
+      z-index: 5;
+      padding: 3px 7px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.78);
+      color: #13243d;
+      font-weight: 800;
+      font-size: .96rem;
+      line-height: 1.2;
+      text-shadow: 0 1px 0 #fff;
+      box-shadow: 0 4px 14px rgba(33, 60, 91, .08);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .lists {
+      position: absolute;
+      z-index: 8;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .list-card {
+      min-width: 0;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(34, 101, 154, .18);
+      background: rgba(255,255,255,.88);
+      box-shadow: 0 8px 20px rgba(0,0,0,.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .list-card h2 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+
+    .nangan .list-card h2 { color: var(--blue); }
+    .beigan .list-card h2 { color: var(--green); }
+    .dongyin .list-card h2 { color: var(--orange); }
+
+    .place-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .place-list a {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 7px;
+      align-items: center;
+      padding: 4px 0;
+      color: #182a45;
+      text-decoration: none;
+      font-size: .9rem;
+    }
+
+    .place-list a:hover .name,
+    .place-list a:focus-visible .name { text-decoration: underline; }
+
+    .num {
+      width: 19px;
+      height: 19px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 99px;
+      color: #fff;
+      font-size: .76rem;
+      font-weight: 900;
+    }
+
+    .num.scenic { background: var(--purple); }
+    .num.food { background: var(--food); }
+    .num.port { background: var(--port); }
+    .gmaps {
+      color: #1f68c7;
+      font-size: .75rem;
+      white-space: nowrap;
+    }
+
+    .sidebar {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .side-card {
+      border-radius: 18px;
+      background: rgba(255,255,255,.88);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .side-card h2 {
+      margin: 0;
+      padding: 13px 16px;
+      color: #135aab;
+      background: #edf6ff;
+      font-size: 1.1rem;
+    }
+
+    .side-body { padding: 14px 16px 16px; }
+
+    .quick-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .quick-list a {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: #172033;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .quick-list a span:last-child { color: #1f68c7; font-weight: 800; }
+
+    .note {
+      color: var(--muted);
+      font-size: .9rem;
+      margin: 0;
+    }
+
+    .notice {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fff7e8;
+      color: #67420e;
+      border: 1px solid #f2d8a9;
+      font-size: .95rem;
+    }
+
+    .all-links {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 14px;
+    }
+
+    .mobile-section {
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .mobile-section h2 {
+      margin: 0;
+      padding: 12px 15px;
+      font-size: 1.1rem;
+      background: #f2f6fb;
+    }
+
+    .mobile-section .inner { padding: 12px 15px 15px; }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    @media (max-width: 1180px) {
+      header { grid-template-columns: 1fr; }
+      .badges { justify-content: flex-start; border-radius: 22px; }
+      .hero { grid-template-columns: 1fr; }
+      .sidebar { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .island { min-height: 730px; }
+    }
+
+    @media (max-width: 960px) {
+      .islands, .all-links { grid-template-columns: 1fr; }
+      .island { min-height: 760px; }
+      .sidebar { grid-template-columns: 1fr; }
+      .badges { display: none; }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100% - 18px, 1440px); padding-top: 12px; }
+      .sub { font-size: .95rem; }
+      .island { min-height: 810px; border-radius: 18px; }
+      .island-shape { inset: 88px 16px 298px; }
+      .lists { grid-template-columns: 1fr; }
+      .label { font-size: .83rem; padding: 2px 5px; }
+      .mark { width: 27px; height: 27px; font-size: .86rem; }
+      .place-list a { font-size: .86rem; }
+      footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div>
+        <h1>馬祖景點地圖總覽</h1>
+        <p class="sub">互動式 GitHub Pages 版：點選地圖標記或清單的「Google 地圖」即可開啟位置。南竿 ↔ 北竿船班約 10–15 分鐘；白天約 30–60 分一班，實際時間仍以船班公告為準。</p>
+      </div>
+      <nav class="badges" aria-label="快速分類">
+        <a class="badge" href="#nangan">📍 南竿</a>
+        <a class="badge" href="#beigan">📍 北竿</a>
+        <a class="badge" href="#dongyin">📍 東引</a>
+        <a class="badge" href="#all-links">🍜 全部連結</a>
+        <a class="badge" href="#transport">⚓ 港口／碼頭</a>
+      </nav>
+    </header>
+
+    <section class="hero" aria-label="馬祖互動地圖">
+      <div class="islands">
+        <article id="nangan" class="island nangan" aria-label="南竿景點與美食">
+          <div class="tag">南竿</div>
+          <div class="island-shape" aria-hidden="true">
+            <svg viewBox="0 0 420 560" preserveAspectRatio="none">
+              <path d="M210 18 C278 35 332 84 344 150 C365 163 384 186 382 219 C380 251 355 271 329 282 C343 323 338 372 306 407 C276 439 230 439 199 422 C175 461 139 490 95 475 C52 459 35 411 54 373 C21 344 8 295 35 257 C58 225 93 211 127 218 C137 178 114 145 136 105 C152 73 176 44 210 18 Z" fill="#b7dfb6"/>
+              <path d="M218 44 C273 62 309 101 317 153 C340 169 351 191 344 217 C335 250 302 260 278 270 C303 310 299 361 267 389 C238 415 203 411 176 392 C154 428 122 451 87 437 C56 424 45 385 61 354 C34 323 28 291 48 265 C72 235 104 229 138 237 C153 203 133 165 154 124 C169 93 188 65 218 44 Z" fill="#d8f0cf" opacity=".62"/>
+            </svg>
+          </div>
+          <span class="road" style="left:33%;top:35%;width:38%;transform:rotate(28deg)"></span>
+          <span class="road" style="left:25%;top:48%;width:48%;transform:rotate(-12deg)"></span>
+          <span class="road" style="left:37%;top:61%;width:30%;transform:rotate(45deg)"></span>
+
+          <a class="mark scenic" style="left:28%;top:36%" href="https://www.google.com/maps/search/?api=1&query=%E9%A6%AC%E7%A5%96%20%E5%8C%97%E6%B5%B7%E5%9D%91%E9%81%93" target="_blank" rel="noopener" aria-label="北海坑道 Google 地圖">1</a><span class="label" style="left:10%;top:38%">北海坑道</span>
+          <a class="mark culture" style="left:51%;top:70%" href="https://www.google.com/maps/search/?api=1&query=%E9%A6%AC%E7%A5%96%E5%B7%A8%E7%A5%9E%E5%83%8F" target="_blank" rel="noopener" aria-label="馬祖巨神像 Google 地圖">2</a><span class="label" style="left:56%;top:71%">馬祖巨神像</span>
+          <a class="mark scenic" style="left:48%;top:49%" href="https://www.google.com/maps/search/?api=1&query=%E5%85%AB%E5%85%AB%E5%9D%91%E9%81%93%20%E9%A6%AC%E7%A5%96" target="_blank" rel="noopener" aria-label="八八坑道 Google 地圖">3</a><span class="label" style="left:55%;top:49%">八八坑道</span>
+          <a class="mark history" style="left:78%;top:46%" href="https://www.google.com/maps/search/?api=1&query=%E9%90%B5%E5%A0%A1%20%E9%A6%AC%E7%A5%96" target="_blank" rel="noopener" aria-label="鐵堡 Google 地圖">4</a><span class="label" style="left:84%;top:46%">鐵堡</span>
+          <a class="mark view" style="left:63%;top:20%" href="https://www.google.com/maps/search/?api=1&query=%E9%9B%B2%E5%8F%B0%E5%B1%B1%20%E9%A6%AC%E7%A5%96" target="_blank" rel="noopener" aria-label="雲台山 Google 地圖">5</a><span class="label" style="left:70%;top:20%">雲台山</span>
+          <a class="mark scenic" style="left:75%;top:57%" href="https://www.google.com/maps/search/?api=1&query=%E6%B4%A5%E6%B2%99%E8%81%9A%E8%90%BD%20%E9%A6%AC%E7%A5%96" target="_blank" rel="noopener" aria-label="津沙聚落 Google 地圖">6</a><span class="label" style="left:79%;top:58%">津沙聚落</span>
+          <a class="mark culture" style="left:44%;top:66%" href="https://www.google.com/maps/search/?api=1&query=%E9%A6%AC%E6%B8%AF%E5%A4%A9%E5%90%8E%E5%AE%AE" target="_blank" rel="noopener" aria-label="馬港天后宮 Google 地圖">7</a><span class="label" style="left:51%;top:67%">馬港天后宮</span>
+          <a class="mark history" style="left:17%;top:63%" href="https://www.google.com/maps/search/?api=1&query=%E5%8B%9D%E5%88%A9%E5%B1%B1%E8%8E%8A%20%E9%A6%AC%E7%A5%96" target="_blank" rel="noopener" aria-label="勝利山莊 Google 地圖">8</a><span class="label" style="left:22%;top:64%">勝利山莊</span>
+          <a class="mark scenic" style="left:19%;top:28%" href="https://www.google.com/maps/search/?api=1&query=%E6%9E%95%E6%88%88%E5%BE%85%E6%97%A6%E7%B4%80%E5%BF%B5%E5%85%AC%E5%9C%92" target="_blank" rel="noopener" aria-label="枕戈待旦紀念公園 Google 地圖">9</a><span class="label" style="left:25%;top:28%">枕戈待旦<br>紀念公園</span>
+          <a class="mark port" style="left:57%;top:72%" href="https://www.google.com/maps/search/?api=1&query=%E7%A6%8F%E6%BE%B3%E6%B8%AF" target="_blank" rel="noopener" aria-label="福澳港 Google 地圖">⚓</a><span class="label" style="left:64%;top:73%">福澳港</span>
+
+          <div class="lists">
+            <section class="list-card"><h2>南竿景點</h2><ul class="place-list" data-region="南竿" data-type="scenic"></ul></section>
+            <section class="list-card"><h2>南竿美食</h2><ul class="place-list" data-region="南竿" data-type="food"></ul></section>
+          </div>
+        </article>
+
+        <article id="beigan" class="island beigan" aria-label="北竿景點與美食">
+          <div class="tag">北竿</div>
+          <div class="island-shape" aria-hidden="true">
+            <svg viewBox="0 0 420 560" preserveAspectRatio="none">
+              <path d="M229 12 C273 27 296 67 294 108 C333 126 350 170 335 209 C369 233 378 282 352 321 C335 346 305 358 277 357 C281 399 257 437 221 451 C193 462 163 453 143 432 C116 468 74 479 43 453 C10 425 17 373 47 347 C18 316 19 269 51 241 C72 222 100 216 126 223 C126 183 144 151 176 133 C162 80 185 29 229 12 Z" fill="#b7dfb6"/>
+              <path d="M231 42 C265 55 279 87 274 119 C307 135 320 171 304 201 C339 226 343 267 319 298 C301 322 272 329 244 326 C255 366 232 401 198 413 C172 422 146 411 129 389 C103 429 70 435 48 413 C24 390 31 356 58 335 C35 307 35 276 59 253 C80 234 106 231 136 241 C140 202 158 168 190 149 C176 104 194 57 231 42 Z" fill="#d8f0cf" opacity=".62"/>
+            </svg>
+          </div>
+          <span class="road" style="left:34%;top:36%;width:44%;transform:rotate(24deg)"></span>
+          <span class="road" style="left:38%;top:52%;width:32%;transform:rotate(-32deg)"></span>
+          <span class="road" style="left:47%;top:61%;width:27%;transform:rotate(52deg)"></span>
+
+          <a class="mark scenic" style="left:40%;top:27%" href="https://www.google.com/maps/search/?api=1&query=%E8%8A%B9%E5%A3%81%E8%81%9A%E8%90%BD" target="_blank" rel="noopener" aria-label="芹壁聚落 Google 地圖">1</a><span class="label" style="left:21%;top:28%">芹壁聚落</span>
+          <a class="mark view" style="left:55%;top:20%" href="https://www.google.com/maps/search/?api=1&query=%E5%A3%81%E5%B1%B1%E8%A7%80%E6%99%AF%E5%8F%B0%20%E9%A6%AC%E7%A5%96" target="_blank" rel="noopener" aria-label="壁山觀景台 Google 地圖">2</a><span class="label" style="left:62%;top:20%">壁山觀景台</span>
+          <a class="mark scenic" style="left:70%;top:37%" href="https://www.google.com/maps/search/?api=1&query=%E5%A1%98%E5%90%8E%E6%B2%99%E7%81%98" target="_blank" rel="noopener" aria-label="塘后沙灘 Google 地圖">3</a><span class="label" style="left:76%;top:37%">塘后沙灘</span>
+          <a class="mark history" style="left:28%;top:49%" href="https://www.google.com/maps/search/?api=1&query=%E6%88%B0%E7%88%AD%E5%92%8C%E5%B9%B3%E7%B4%80%E5%BF%B5%E5%85%AC%E5%9C%92%20%E9%A6%AC%E7%A5%96" target="_blank" rel="noopener" aria-label="戰爭和平紀念公園 Google 地圖">4</a><span class="label" style="left:11%;top:48%">戰爭和平<br>紀念公園</span>
+          <a class="mark scenic" style="left:57%;top:54%" href="https://www.google.com/maps/search/?api=1&query=%E6%A9%8B%E4%BB%94%E6%9D%91" target="_blank" rel="noopener" aria-label="橋仔村 Google 地圖">5</a><span class="label" style="left:64%;top:54%">橋仔村</span>
+          <a class="mark scenic" style="left:69%;top:63%" href="https://www.google.com/maps/search/?api=1&query=%E5%9D%82%E9%87%8C%E6%B2%99%E7%81%98" target="_blank" rel="noopener" aria-label="坂里沙灘 Google 地圖">6</a><span class="label" style="left:75%;top:64%">坂里沙灘</span>
+          <a class="mark scenic" style="left:51%;top:73%" href="https://www.google.com/maps/search/?api=1&query=%E5%8D%88%E6%B2%99%E6%B8%AF" target="_blank" rel="noopener" aria-label="午沙港 Google 地圖">7</a><span class="label" style="left:57%;top:74%">午沙港</span>
+          <a class="mark port" style="left:70%;top:83%" href="https://www.google.com/maps/search/?api=1&query=%E7%99%BD%E6%B2%99%E6%B8%AF" target="_blank" rel="noopener" aria-label="白沙港 Google 地圖">⚓</a><span class="label" style="left:77%;top:84%">白沙港</span>
+
+          <div class="lists">
+            <section class="list-card"><h2>北竿景點</h2><ul class="place-list" data-region="北竿" data-type="scenic"></ul></section>
+            <section class="list-card"><h2>北竿美食</h2><ul class="place-list" data-region="北竿" data-type="food"></ul></section>
+          </div>
+        </article>
+
+        <article id="dongyin" class="island dongyin" aria-label="東引景點與美食">
+          <div class="tag">東引</div>
+          <div class="island-shape" aria-hidden="true">
+            <svg viewBox="0 0 420 560" preserveAspectRatio="none">
+              <path d="M215 10 C263 31 290 77 286 126 C325 140 350 175 350 216 C349 255 321 281 288 292 C312 337 305 392 268 427 C231 463 176 453 149 414 C122 428 88 427 61 407 C25 380 23 331 51 302 C18 272 10 224 35 187 C57 155 92 143 126 149 C128 93 162 33 215 10 Z" fill="#b7dfb6"/>
+              <path d="M217 42 C254 59 274 95 266 136 C302 151 322 183 316 215 C309 251 280 266 250 274 C277 317 271 363 240 394 C210 423 170 414 145 380 C119 397 88 391 68 371 C44 348 48 316 73 296 C45 270 38 232 60 200 C80 172 113 164 145 174 C144 121 173 61 217 42 Z" fill="#d8f0cf" opacity=".62"/>
+            </svg>
+          </div>
+          <span class="road" style="left:45%;top:31%;width:30%;transform:rotate(38deg)"></span>
+          <span class="road" style="left:41%;top:49%;width:39%;transform:rotate(-15deg)"></span>
+          <span class="road" style="left:55%;top:63%;width:26%;transform:rotate(53deg)"></span>
+
+          <a class="mark scenic" style="left:60%;top:13%" href="https://www.google.com/maps/search/?api=1&query=%E5%9C%8B%E4%B9%8B%E5%8C%97%E7%96%86" target="_blank" rel="noopener" aria-label="國之北疆 Google 地圖">1</a><span class="label" style="left:67%;top:13%">國之北疆</span>
+          <a class="mark scenic" style="left:58%;top:25%" href="https://www.google.com/maps/search/?api=1&query=%E6%9D%B1%E6%B9%A7%E7%87%88%E5%A1%94" target="_blank" rel="noopener" aria-label="東湧燈塔 Google 地圖">2</a><span class="label" style="left:65%;top:25%">東湧燈塔</span>
+          <a class="mark history" style="left:40%;top:36%" href="https://www.google.com/maps/search/?api=1&query=%E5%AE%89%E6%9D%B1%E5%9D%91%E9%81%93" target="_blank" rel="noopener" aria-label="安東坑道 Google 地圖">3</a><span class="label" style="left:47%;top:36%">安東坑道</span>
+          <a class="mark scenic" style="left:68%;top:47%" href="https://www.google.com/maps/search/?api=1&query=%E4%B8%80%E7%B7%9A%E5%A4%A9%20%E6%9D%B1%E5%BC%95" target="_blank" rel="noopener" aria-label="一線天 Google 地圖">4</a><span class="label" style="left:75%;top:48%">一線天</span>
+          <a class="mark scenic" style="left:24%;top:59%" href="https://www.google.com/maps/search/?api=1&query=%E7%87%95%E7%A7%80%E6%BD%AE%E9%9F%B3" target="_blank" rel="noopener" aria-label="燕秀潮音 Google 地圖">5</a><span class="label" style="left:31%;top:60%">燕秀潮音</span>
+          <a class="mark history" style="left:55%;top:61%" href="https://www.google.com/maps/search/?api=1&query=%E7%83%88%E5%A5%B3%E7%BE%A9%E5%9D%91" target="_blank" rel="noopener" aria-label="烈女義坑 Google 地圖">6</a><span class="label" style="left:62%;top:62%">烈女義坑</span>
+          <a class="mark scenic" style="left:68%;top:73%" href="https://www.google.com/maps/search/?api=1&query=%E5%90%8E%E6%BE%B3%E6%B5%B7%E5%B2%B8" target="_blank" rel="noopener" aria-label="后澳海岸 Google 地圖">7</a><span class="label" style="left:75%;top:74%">后澳海岸</span>
+          <a class="mark port" style="left:69%;top:84%" href="https://www.google.com/maps/search/?api=1&query=%E4%B8%AD%E6%9F%B1%E6%B8%AF" target="_blank" rel="noopener" aria-label="中柱港 Google 地圖">⚓</a><span class="label" style="left:76%;top:85%">中柱港</span>
+
+          <div class="lists">
+            <section class="list-card"><h2>東引景點</h2><ul class="place-list" data-region="東引" data-type="scenic"></ul></section>
+            <section class="list-card"><h2>東引美食</h2><ul class="place-list" data-region="東引" data-type="food"></ul></section>
+          </div>
+        </article>
+      </div>
+
+      <aside class="sidebar" aria-label="快速連結與說明">
+        <section id="transport" class="side-card">
+          <h2>⚓ 快速連結</h2>
+          <div class="side-body">
+            <h3 style="margin:0 0 8px;font-size:1rem;color:#234;">交通</h3>
+            <ul class="quick-list">
+              <li><a href="https://www.google.com/maps/search/?api=1&query=%E7%A6%8F%E6%BE%B3%E6%B8%AF" target="_blank" rel="noopener"><span>福澳港（南竿）</span><span>Google 地圖</span></a></li>
+              <li><a href="https://www.google.com/maps/search/?api=1&query=%E7%99%BD%E6%B2%99%E6%B8%AF" target="_blank" rel="noopener"><span>白沙港（北竿）</span><span>Google 地圖</span></a></li>
+              <li><a href="https://www.google.com/maps/search/?api=1&query=%E4%B8%AD%E6%9F%B1%E6%B8%AF" target="_blank" rel="noopener"><span>中柱港（東引）</span><span>Google 地圖</span></a></li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <h2>馬祖更多資訊</h2>
+          <div class="side-body">
+            <ul style="margin:0;padding-left:1.1em;color:#33435b;">
+              <li><a href="https://www.matsu-nsa.gov.tw/" target="_blank" rel="noopener">馬祖國家風景區管理處</a></li>
+              <li><a href="https://www.matsu.gov.tw/" target="_blank" rel="noopener">連江縣政府</a></li>
+              <li><a href="https://www.matsu-news.gov.tw/" target="_blank" rel="noopener">馬祖日報</a></li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <h2>使用說明</h2>
+          <div class="side-body">
+            <div class="notice"><strong>💡</strong><span>點擊地圖上的數字、港口圖示，或清單中的「Google 地圖」，會在新分頁開啟該地點搜尋結果。</span></div>
+          </div>
+        </section>
+      </aside>
+    </section>
+
+    <section id="all-links" class="all-links" aria-label="全部可點擊清單">
+      <article class="mobile-section"><h2>南竿全部連結</h2><div class="inner"><ul class="place-list" data-region="南竿" data-type="all"></ul></div></article>
+      <article class="mobile-section"><h2>北竿全部連結</h2><div class="inner"><ul class="place-list" data-region="北竿" data-type="all"></ul></div></article>
+      <article class="mobile-section"><h2>東引全部連結</h2><div class="inner"><ul class="place-list" data-region="東引" data-type="all"></ul></div></article>
+    </section>
+
+    <footer>
+      <span>製作日期：2026.06｜互動版</span>
+      <span>船班時間可能因季節、天候調整，出發前請確認最新資訊。</span>
+    </footer>
+  </main>
+
+  <script>
+    const places = [
+      { region: '南竿', type: 'scenic', no: 1, name: '北海坑道', q: '馬祖 北海坑道' },
+      { region: '南竿', type: 'scenic', no: 2, name: '馬祖巨神像', q: '馬祖巨神像' },
+      { region: '南竿', type: 'scenic', no: 3, name: '八八坑道', q: '八八坑道 馬祖' },
+      { region: '南竿', type: 'scenic', no: 4, name: '鐵堡', q: '鐵堡 馬祖' },
+      { region: '南竿', type: 'scenic', no: 5, name: '雲台山', q: '雲台山 馬祖' },
+      { region: '南竿', type: 'scenic', no: 6, name: '津沙聚落', q: '津沙聚落 馬祖' },
+      { region: '南竿', type: 'scenic', no: 7, name: '馬港天后宮', q: '馬港天后宮' },
+      { region: '南竿', type: 'scenic', no: 8, name: '勝利山莊', q: '勝利山莊 馬祖' },
+      { region: '南竿', type: 'scenic', no: 9, name: '枕戈待旦紀念公園', q: '枕戈待旦紀念公園' },
+      { region: '南竿', type: 'food', no: 1, name: '依嬤的店（鼎邊糊）', q: '依嬤的店 鼎邊糊 馬祖' },
+      { region: '南竿', type: 'food', no: 2, name: '超群繼光餅', q: '超群繼光餅 馬祖' },
+      { region: '南竿', type: 'food', no: 3, name: '魚之鄉（魚麵）', q: '魚之鄉 魚麵 馬祖' },
+      { region: '南竿', type: 'food', no: 4, name: '八八坑道餐廳（老酒麵線）', q: '八八坑道餐廳 老酒麵線' },
+      { region: '南竿', type: 'food', no: 5, name: '紅糟料理合菜餐廳', q: '馬祖 南竿 紅糟料理 合菜餐廳' },
+      { region: '南竿', type: 'food', no: 6, name: '金板境／地瓜餃小店', q: '金板境 地瓜餃 馬祖' },
+
+      { region: '北竿', type: 'scenic', no: 1, name: '芹壁聚落', q: '芹壁聚落' },
+      { region: '北竿', type: 'scenic', no: 2, name: '壁山觀景台', q: '壁山觀景台 馬祖' },
+      { region: '北竿', type: 'scenic', no: 3, name: '塘后沙灘', q: '塘后沙灘' },
+      { region: '北竿', type: 'scenic', no: 4, name: '戰爭和平紀念公園', q: '戰爭和平紀念公園 馬祖' },
+      { region: '北竿', type: 'scenic', no: 5, name: '橋仔村', q: '橋仔村 馬祖' },
+      { region: '北竿', type: 'scenic', no: 6, name: '坂里沙灘', q: '坂里沙灘' },
+      { region: '北竿', type: 'scenic', no: 7, name: '午沙港', q: '午沙港 馬祖' },
+      { region: '北竿', type: 'food', no: 1, name: '芹壁魚麵店', q: '芹壁魚麵店' },
+      { region: '北竿', type: 'food', no: 2, name: '芹壁老酒麵線小店', q: '芹壁 老酒麵線' },
+      { region: '北竿', type: 'food', no: 3, name: '超群繼光餅（北竿店）', q: '超群繼光餅 北竿店' },
+      { region: '北竿', type: 'food', no: 4, name: '橋仔海鮮餐廳', q: '橋仔 海鮮餐廳 馬祖' },
+      { region: '北竿', type: 'food', no: 5, name: '坂里海鮮合菜店', q: '坂里 海鮮 合菜 馬祖' },
+      { region: '北竿', type: 'food', no: 6, name: '地瓜餃小店', q: '北竿 地瓜餃' },
+
+      { region: '東引', type: 'scenic', no: 1, name: '國之北疆', q: '國之北疆' },
+      { region: '東引', type: 'scenic', no: 2, name: '東湧燈塔', q: '東湧燈塔' },
+      { region: '東引', type: 'scenic', no: 3, name: '安東坑道', q: '安東坑道' },
+      { region: '東引', type: 'scenic', no: 4, name: '一線天', q: '一線天 東引' },
+      { region: '東引', type: 'scenic', no: 5, name: '燕秀潮音', q: '燕秀潮音' },
+      { region: '東引', type: 'scenic', no: 6, name: '烈女義坑', q: '烈女義坑' },
+      { region: '東引', type: 'scenic', no: 7, name: '后澳海岸', q: '后澳海岸 東引' },
+      { region: '東引', type: 'food', no: 1, name: '東引魚麵店（炒魚麵）', q: '東引魚麵店 炒魚麵' },
+      { region: '東引', type: 'food', no: 2, name: '海鮮老酒餐廳', q: '東引 海鮮 老酒 餐廳' },
+      { region: '東引', type: 'food', no: 3, name: '港口海鮮合菜餐廳', q: '東引 港口 海鮮 合菜 餐廳' },
+      { region: '東引', type: 'food', no: 4, name: '東引豆花店', q: '東引 豆花店' },
+      { region: '東引', type: 'food', no: 5, name: '中柱港小吃店', q: '中柱港 小吃店 東引' }
+    ];
+
+    const mapUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+
+    document.querySelectorAll('.place-list').forEach((ul) => {
+      const region = ul.dataset.region;
+      const type = ul.dataset.type;
+      const data = places.filter((p) => p.region === region && (type === 'all' || p.type === type));
+      ul.innerHTML = data.map((p) => `
+        <li>
+          <a href="${mapUrl(p.q)}" target="_blank" rel="noopener" aria-label="${p.name} Google 地圖">
+            <span class="num ${p.type}">${p.no}</span>
+            <span class="name">${p.name}</span>
+            <span class="gmaps">Google 地圖</span>
+          </a>
+        </li>
+      `).join('');
+    });
+  </script>
+</body>
+</html>
