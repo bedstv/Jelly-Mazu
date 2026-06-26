@@ -2,17 +2,822 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="0; url=mobile-v2.html">
-<title>馬祖景點地圖總覽</title>
-<link rel="canonical" href="mobile-v2.html">
-<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;margin:0;display:grid;min-height:100vh;place-items:center;background:#f5f7fb;color:#172033}.card{width:min(560px,calc(100% - 32px));background:#fff;border:1px solid #dbe5f1;border-radius:22px;padding:24px;box-shadow:0 10px 28px rgba(28,42,66,.1)}a{display:inline-block;margin-top:12px;padding:10px 14px;border-radius:12px;background:#0d62bd;color:#fff;text-decoration:none;font-weight:800}</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>馬祖景點地圖總覽｜手機導航版</title>
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://tile.openstreetmap.org">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --bg:#f4f8fb;
+  --ink:#162033;
+  --muted:#657487;
+  --line:#dbe6f1;
+  --card:rgba(255,255,255,.92);
+  --shadow:0 16px 42px rgba(28,51,84,.12);
+  --blue:#0d63c7;
+  --green:#128a55;
+  --orange:#d97900;
+  --purple:#7d4fc6;
+  --food:#f08a00;
+  --port:#1478d4;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  background:
+    radial-gradient(circle at 12% 0%,rgba(88,171,255,.26),transparent 34rem),
+    radial-gradient(circle at 95% 12%,rgba(255,191,105,.22),transparent 32rem),
+    linear-gradient(180deg,#f7fbff 0%,#f2f6fa 45%,#eef5f7 100%);
+}
+a{color:inherit}
+button,a{-webkit-tap-highlight-color:transparent}
+.page{
+  width:min(1180px,calc(100% - 22px));
+  margin:auto;
+  padding:12px 0 calc(96px + var(--safe-bottom));
+}
+.hero{
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(219,230,241,.95);
+  border-radius:28px;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,255,255,.84)),
+    radial-gradient(circle at 85% 20%,rgba(20,120,212,.16),transparent 20rem);
+  box-shadow:var(--shadow);
+  padding:18px;
+}
+.hero:after{
+  content:"";
+  position:absolute;
+  right:-42px;
+  top:-48px;
+  width:190px;
+  height:190px;
+  border-radius:48% 52% 49% 51%;
+  background:linear-gradient(135deg,rgba(38,164,106,.18),rgba(13,99,199,.15));
+  transform:rotate(-15deg);
+}
+.heroTop{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:14px;
+  align-items:start;
+}
+.kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  width:max-content;
+  padding:7px 10px;
+  border:1px solid #cfe0f0;
+  border-radius:999px;
+  background:#fff;
+  color:#315d8f;
+  font-size:.86rem;
+  font-weight:900;
+}
+h1{
+  margin:12px 0 8px;
+  font-size:clamp(2rem,7vw,4.25rem);
+  letter-spacing:-.06em;
+  line-height:.95;
+}
+.lead{
+  max-width:800px;
+  margin:0;
+  color:#405266;
+  line-height:1.65;
+  font-size:1.02rem;
+}
+.version{
+  display:grid;
+  gap:6px;
+  justify-items:end;
+  min-width:156px;
+  padding:12px;
+  border:1px solid #dfeaf4;
+  border-radius:20px;
+  background:#ffffffd9;
+  box-shadow:0 10px 28px rgba(47,80,120,.08);
+  font-size:.9rem;
+}
+.version strong{font-size:1rem}
+.quickStats{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:16px;
+}
+.stat{
+  min-height:72px;
+  padding:12px;
+  border:1px solid #dfeaf4;
+  border-radius:20px;
+  background:#ffffffd9;
+}
+.stat b{display:block;margin-bottom:3px}
+.stat span{color:var(--muted);font-size:.92rem;line-height:1.35}
+.topNav{
+  position:sticky;
+  top:0;
+  z-index:900;
+  margin:12px 0 14px;
+  padding:8px;
+  border:1px solid rgba(219,230,241,.94);
+  border-radius:22px;
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(12px);
+  box-shadow:0 12px 30px rgba(28,51,84,.08);
+}
+.navScroll{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+.navScroll a{
+  display:grid;
+  place-items:center;
+  min-height:46px;
+  border-radius:16px;
+  border:1px solid #dbe6f1;
+  background:#fff;
+  text-decoration:none;
+  font-weight:950;
+}
+.navScroll a:nth-child(1){color:var(--blue)}
+.navScroll a:nth-child(2){color:var(--green)}
+.navScroll a:nth-child(3){color:var(--orange)}
+.section{
+  scroll-margin-top:92px;
+  margin:18px 0;
+  border:1px solid rgba(219,230,241,.95);
+  border-radius:30px;
+  background:var(--card);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.sectionHeader{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:14px;
+  align-items:center;
+  padding:16px;
+  color:#fff;
+}
+.section[data-theme="blue"] .sectionHeader{background:linear-gradient(135deg,#0d63c7,#0c87d4)}
+.section[data-theme="green"] .sectionHeader{background:linear-gradient(135deg,#128a55,#17a979)}
+.section[data-theme="orange"] .sectionHeader{background:linear-gradient(135deg,#d97900,#ec9e24)}
+.sectionHeader h2{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  margin:0;
+  font-size:clamp(1.55rem,4vw,2.25rem);
+}
+.sectionHeader small{
+  opacity:.88;
+  font-weight:800;
+}
+.sectionHeader p{
+  margin:6px 0 0;
+  max-width:760px;
+  color:rgba(255,255,255,.9);
+  line-height:1.55;
+}
+.openIsland{
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  min-height:44px;
+  padding:0 14px;
+  border-radius:999px;
+  background:rgba(255,255,255,.96);
+  color:#1e334b;
+  text-decoration:none;
+  font-weight:950;
+  white-space:nowrap;
+}
+.sectionBody{padding:14px}
+.mapShell{
+  overflow:hidden;
+  border:1px solid #d4e2ef;
+  border-radius:26px;
+  background:#cdebf7;
+}
+.mapToolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px;
+  background:linear-gradient(180deg,#fff,#f7fbff);
+  border-bottom:1px solid #dbe6f1;
+}
+.mapHint{
+  color:#4f6174;
+  font-size:.9rem;
+  font-weight:800;
+}
+.filters{
+  display:flex;
+  gap:7px;
+  overflow:auto;
+  padding-bottom:1px;
+}
+.filters button{
+  border:1px solid #d6e3ef;
+  border-radius:999px;
+  background:#fff;
+  color:#263b52;
+  min-height:36px;
+  padding:0 11px;
+  font-weight:950;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.filters button.active{
+  color:#fff;
+  border-color:transparent;
+  background:#1c78d1;
+}
+.map{
+  width:100%;
+  height:clamp(390px,58vh,620px);
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0)),
+    #cbeaf6;
+}
+.mapFallback{
+  display:grid;
+  place-items:center;
+  padding:24px;
+  min-height:360px;
+  text-align:center;
+}
+.mapFallback div{
+  max-width:420px;
+  padding:18px;
+  border-radius:22px;
+  background:rgba(255,255,255,.88);
+  box-shadow:0 10px 30px rgba(54,83,110,.12);
+}
+.mapFallback a{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  margin-top:12px;
+  padding:0 14px;
+  border-radius:999px;
+  background:#0d63c7;
+  color:#fff;
+  text-decoration:none;
+  font-weight:950;
+}
+.leaflet-container{
+  font-family:inherit;
+}
+.leaflet-popup-content{
+  min-width:190px;
+  margin:12px 14px;
+}
+.leaflet-popup-content strong{
+  display:block;
+  margin-bottom:4px;
+  font-size:1rem;
+}
+.leaflet-popup-content p{
+  margin:4px 0 10px;
+  color:#546579;
+  line-height:1.45;
+}
+.popupActions{
+  display:flex;
+  gap:8px;
+}
+.popupActions a{
+  flex:1;
+  display:grid;
+  place-items:center;
+  min-height:36px;
+  border-radius:12px;
+  background:#edf6ff;
+  color:#0d63c7;
+  text-decoration:none;
+  font-weight:950;
+}
+.popupActions a.route{
+  background:#0d63c7;
+  color:#fff;
+}
+.map-marker{
+  display:grid;
+  place-items:center;
+  width:34px!important;
+  height:34px!important;
+  margin-left:-17px!important;
+  margin-top:-17px!important;
+  border:3px solid #fff;
+  border-radius:50%;
+  color:#fff;
+  font-weight:1000;
+  box-shadow:0 9px 18px rgba(20,34,54,.28);
+}
+.map-marker.marker-attraction{background:var(--purple)}
+.map-marker.marker-food{background:var(--food)}
+.map-marker.marker-port{background:var(--port)}
+.map-marker span{
+  transform:translateY(-1px);
+}
+.legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:12px 2px 0;
+  color:#4b5d70;
+  font-size:.92rem;
+  font-weight:850;
+}
+.legend span{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 9px;
+  border:1px solid #dbe6f1;
+  border-radius:999px;
+  background:#fff;
+}
+.dot{
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  display:inline-block;
+}
+.dot.attraction{background:var(--purple)}
+.dot.food{background:var(--food)}
+.dot.port{background:var(--port)}
+.listIntro{
+  margin:18px 4px 10px;
+  color:#485a6d;
+  font-weight:850;
+}
+.groupGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+.group{
+  border:1px solid #dbe6f1;
+  border-radius:24px;
+  background:#fff;
+  overflow:hidden;
+}
+.group h3{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin:0;
+  min-height:52px;
+  padding:12px 14px;
+  border-bottom:1px solid #e8eff7;
+  background:#f7fbff;
+  font-size:1.05rem;
+}
+.group h3 small{
+  color:#718092;
+}
+.placeList{
+  display:grid;
+  gap:10px;
+  margin:0;
+  padding:12px;
+  list-style:none;
+}
+.placeCard{
+  display:grid;
+  gap:8px;
+  padding:11px;
+  border:1px solid #e5edf5;
+  border-radius:18px;
+  background:linear-gradient(180deg,#fff,#fbfdff);
+}
+.placeTop{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:9px;
+  align-items:center;
+}
+.badge{
+  display:grid;
+  place-items:center;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  color:#fff;
+  font-weight:1000;
+  line-height:1;
+}
+.badge.attraction{background:var(--purple)}
+.badge.food{background:var(--food)}
+.badge.port{background:var(--port)}
+.placeTitle{
+  margin:0;
+  font-weight:1000;
+  line-height:1.25;
+}
+.placeNote{
+  margin:0;
+  color:#5d6e80;
+  font-size:.92rem;
+  line-height:1.45;
+}
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.actions a{
+  display:grid;
+  place-items:center;
+  min-height:40px;
+  border-radius:14px;
+  text-decoration:none;
+  font-weight:950;
+}
+.actions a.mapLink{
+  background:#edf6ff;
+  color:#0d63c7;
+}
+.actions a.routeLink{
+  background:#172033;
+  color:#fff;
+}
+.portsCard{
+  scroll-margin-top:92px;
+  margin:18px 0;
+  padding:16px;
+  border:1px solid rgba(219,230,241,.95);
+  border-radius:30px;
+  background:linear-gradient(135deg,#ffffff,#f6fbff);
+  box-shadow:var(--shadow);
+}
+.portsCard h2{margin:0 0 10px;font-size:1.55rem}
+.portGrid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+.portGrid a{
+  display:grid;
+  gap:6px;
+  min-height:86px;
+  padding:14px;
+  border:1px solid #dbe6f1;
+  border-radius:20px;
+  background:#fff;
+  text-decoration:none;
+  font-weight:1000;
+}
+.portGrid small{
+  color:#68788b;
+  font-weight:850;
+}
+.notice{
+  margin:14px 0 0;
+  padding:12px 14px;
+  border-radius:18px;
+  background:#fff7e8;
+  color:#6a4a18;
+  line-height:1.55;
+  font-weight:850;
+}
+footer{
+  margin:18px 4px 0;
+  color:#6b7a8c;
+  font-size:.92rem;
+  line-height:1.6;
+}
+.bottomNav{
+  position:fixed;
+  z-index:1000;
+  left:0;
+  right:0;
+  bottom:0;
+  padding:8px 10px calc(8px + var(--safe-bottom));
+  border-top:1px solid #dbe6f1;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(12px);
+}
+.bottomNav div{
+  width:min(720px,100%);
+  margin:auto;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+.bottomNav a{
+  display:grid;
+  place-items:center;
+  min-height:46px;
+  border:1px solid #dbe6f1;
+  border-radius:16px;
+  background:#fff;
+  text-decoration:none;
+  font-size:.95rem;
+  font-weight:1000;
+}
+@media (max-width:920px){
+  .heroTop{grid-template-columns:1fr}
+  .version{justify-items:start;min-width:0}
+  .quickStats{grid-template-columns:1fr}
+  .sectionHeader{grid-template-columns:1fr}
+  .openIsland{width:max-content}
+  .mapToolbar{align-items:flex-start;flex-direction:column}
+  .filters{width:100%}
+  .groupGrid{grid-template-columns:1fr}
+  .portGrid{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .page{width:min(100% - 14px,1180px);padding-top:8px}
+  .hero{border-radius:24px;padding:15px}
+  .lead{font-size:.98rem}
+  .navScroll{display:flex;overflow:auto;scroll-snap-type:x mandatory}
+  .navScroll a{min-width:88px;scroll-snap-align:start}
+  .section{border-radius:26px;margin:14px 0}
+  .sectionBody{padding:10px}
+  .sectionHeader{padding:14px}
+  .map{height:min(62vh,520px);min-height:390px}
+  .mapHint{font-size:.84rem}
+  .filters button{min-height:38px}
+  .placeCard{padding:10px}
+  .actions a{min-height:42px}
+  .bottomNav a{font-size:.88rem}
+}
+</style>
 </head>
 <body>
-<main class="card">
-<h1>馬祖景點地圖總覽</h1>
-<p>正在前往手機互動版 Mobile map v2。</p>
-<a href="mobile-v2.html">開啟 Mobile map v2</a>
-</main>
+<div class="page">
+  <header class="hero" id="top">
+    <div class="heroTop">
+      <div>
+        <span class="kicker">📍 手機導航版 · 分島地圖</span>
+        <h1>馬祖景點地圖總覽</h1>
+        <p class="lead">重新以「手機旅遊現場使用」為核心設計：每個島各自一張可拖曳地圖，清單全部放在地圖下方，點景點卡片即可開 Google Maps 或直接導航，不會再遮住地圖。</p>
+      </div>
+      <div class="version" aria-label="版本資訊">
+        <strong>版本 2026.06.26</strong>
+        <span>UX 重製版</span>
+        <span>看到舊版可重新整理或在網址後加 <b>?v=20260626</b></span>
+      </div>
+    </div>
+    <div class="quickStats">
+      <div class="stat"><b>🚢 南竿 ↔ 北竿</b><span>船程約 10–15 分鐘；實際班次仍以當日公告為準。</span></div>
+      <div class="stat"><b>🗺️ 地圖優先</b><span>先用島內地圖判斷位置，再從下方清單開導航。</span></div>
+      <div class="stat"><b>🍜 景點／美食分色</b><span>紫色景點、橘色美食、藍色港口，手機上比較好找。</span></div>
+    </div>
+  </header>
+
+  <nav class="topNav" aria-label="島嶼快速切換">
+    <div class="navScroll">
+      <a href="#nangan">南竿</a>
+      <a href="#beigan">北竿</a>
+      <a href="#dongyin">東引</a>
+      <a href="#ports">港口</a>
+    </div>
+  </nav>
+
+  <main id="islands"></main>
+
+  <section class="portsCard" id="ports">
+    <h2>⚓ 港口／碼頭快速連結</h2>
+    <div class="portGrid" id="portGrid"></div>
+    <div class="notice">提醒：船班與景點開放時間會受季節、天候與營運狀況影響，出發前請再確認最新公告。</div>
+  </section>
+
+  <footer>地圖標記用於行前與現場快速判斷相對位置；按鈕會用 Google Maps 搜尋或導航至該地點。</footer>
+</div>
+
+<nav class="bottomNav" aria-label="底部快速導覽">
+  <div>
+    <a href="#nangan">南竿</a>
+    <a href="#beigan">北竿</a>
+    <a href="#dongyin">東引</a>
+    <a href="#ports">港口</a>
+  </div>
+</nav>
+
+<noscript>
+  <div style="padding:20px;font-family:sans-serif">此頁需要 JavaScript 產生地圖與清單。請開啟 JavaScript，或直接使用 Google Maps 搜尋各景點名稱。</div>
+</noscript>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const ISLANDS = [{"id":"nangan","name":"南竿","en":"Nangan","theme":"blue","center":[26.1545,119.9445],"blurb":"馬祖主要交通與住宿核心，福澳港、馬港、津沙與雲台山都在同一島上。","items":[{"type":"attraction","title":"北海坑道","query":"北海坑道 馬祖 南竿","lat":26.144,"lng":119.929,"note":"經典坑道景點，適合安排在南竿半日線。"},{"type":"attraction","title":"馬祖巨神像","query":"馬祖巨神像 南竿","lat":26.1592,"lng":119.9224,"note":"馬港周邊地標，常與馬港天后宮一起排。"},{"type":"attraction","title":"八八坑道","query":"八八坑道 馬祖 南竿","lat":26.1578,"lng":119.939,"note":"老酒文化相關景點，開車或騎車很順路。"},{"type":"attraction","title":"鐵堡","query":"鐵堡 馬祖 南竿","lat":26.151,"lng":119.966,"note":"海岸軍事景點，建議白天視線好時前往。"},{"type":"attraction","title":"雲台山","query":"雲台山 馬祖 南竿","lat":26.164,"lng":119.943,"note":"南竿制高點，天氣好時看海景很適合。"},{"type":"attraction","title":"津沙聚落","query":"津沙聚落 馬祖 南竿","lat":26.1442,"lng":119.9234,"note":"傳統聚落與海邊風景，傍晚拍照舒服。"},{"type":"attraction","title":"馬港天后宮","query":"馬港天后宮 馬祖 南竿","lat":26.1588,"lng":119.9206,"note":"馬港生活圈重點景點，可搭配用餐。"},{"type":"attraction","title":"勝利山莊","query":"勝利山莊 馬祖 南竿","lat":26.1519,"lng":119.9174,"note":"軍事歷史景點，可視時間加入。"},{"type":"attraction","title":"枕戈待旦紀念公園","query":"枕戈待旦紀念公園 馬祖 南竿","lat":26.1605,"lng":119.9522,"note":"南竿地標，靠近福澳與市區。"},{"type":"food","title":"依嬤的店（鼎邊糊）","query":"依嬤的店 鼎邊糊 馬祖","lat":26.1586,"lng":119.9217,"note":"南竿常見小吃點，適合早餐或簡餐。"},{"type":"food","title":"超群繼光餅","query":"超群繼光餅 馬祖 南竿","lat":26.1608,"lng":119.9515,"note":"繼光餅可當點心，建議順路買。"},{"type":"food","title":"魚之鄉（魚麵）","query":"魚之鄉 魚麵 馬祖","lat":26.16,"lng":119.9507,"note":"魚麵類小吃，適合安排在市區動線。"},{"type":"food","title":"八八坑道餐廳（老酒麵線）","query":"八八坑道餐廳 老酒麵線 馬祖","lat":26.1575,"lng":119.9398,"note":"可搭配八八坑道周邊。"},{"type":"food","title":"紅糟料理合菜餐廳","query":"紅糟料理 合菜 馬祖 南竿","lat":26.157,"lng":119.946,"note":"多人用餐可搜尋附近合菜餐廳。"},{"type":"food","title":"金板境／地瓜餃小店","query":"金板境 地瓜餃 馬祖 南竿","lat":26.1453,"lng":119.9242,"note":"津沙、馬港周邊可順路找甜點小吃。"},{"type":"port","title":"福澳港","query":"福澳港 馬祖 南竿","lat":26.1603,"lng":119.9585,"note":"南竿主要港口，搭船與換島常用。"}]},{"id":"beigan","name":"北竿","en":"Beigan","theme":"green","center":[26.224,119.996],"blurb":"芹壁、壁山、塘后與白沙港集中在北竿，適合用一張島內地圖快速判斷順路性。","items":[{"type":"attraction","title":"芹壁聚落","query":"芹壁聚落 馬祖 北竿","lat":26.2245,"lng":119.9845,"note":"北竿最具代表性的聚落，拍照與咖啡都方便。"},{"type":"attraction","title":"壁山觀景台","query":"壁山觀景台 馬祖 北竿","lat":26.2248,"lng":119.9975,"note":"北竿制高點，適合天氣好時先衝。"},{"type":"attraction","title":"塘后沙灘","query":"塘后沙灘 馬祖 北竿","lat":26.2205,"lng":120.0016,"note":"機場附近海灘，可與坂里、白沙動線搭配。"},{"type":"attraction","title":"戰爭和平紀念公園","query":"戰爭和平紀念公園 馬祖 北竿","lat":26.2225,"lng":119.99,"note":"軍事歷史主題景點，北竿中線順路。"},{"type":"attraction","title":"橋仔村","query":"橋仔村 馬祖 北竿","lat":26.233,"lng":119.986,"note":"北竿漁村聚落，可搭配海鮮或小吃。"},{"type":"attraction","title":"坂里沙灘","query":"坂里沙灘 馬祖 北竿","lat":26.212,"lng":119.9878,"note":"靠近白沙港，適合作為上船前後的短停。"},{"type":"attraction","title":"午沙港","query":"午沙港 馬祖 北竿","lat":26.2097,"lng":119.9915,"note":"北竿南側港灣，可與白沙港一併判斷。"},{"type":"food","title":"芹壁魚麵店","query":"芹壁魚麵店 馬祖 北竿","lat":26.2243,"lng":119.9844,"note":"芹壁周邊用餐選項，適合與聚落安排一起。"},{"type":"food","title":"芹壁老酒麵線小店","query":"芹壁 老酒麵線 馬祖 北竿","lat":26.224,"lng":119.985,"note":"想吃老酒麵線可在芹壁附近搜尋。"},{"type":"food","title":"超群繼光餅（北竿店）","query":"超群繼光餅 北竿 馬祖","lat":26.2208,"lng":119.9963,"note":"北竿小吃補給點，適合外帶。"},{"type":"food","title":"橋仔海鮮餐廳","query":"橋仔 海鮮 餐廳 馬祖 北竿","lat":26.2327,"lng":119.9865,"note":"橋仔村周邊海鮮合菜可用此搜尋。"},{"type":"food","title":"坂里海鮮合菜店","query":"坂里 海鮮 合菜 馬祖 北竿","lat":26.2122,"lng":119.9874,"note":"白沙、坂里附近用餐備選。"},{"type":"food","title":"地瓜餃家族小店","query":"地瓜餃 馬祖 北竿","lat":26.2217,"lng":119.9955,"note":"北竿甜點小吃備選。"},{"type":"port","title":"白沙港","query":"白沙港 馬祖 北竿","lat":26.2103,"lng":119.9942,"note":"北竿主要港口，南北竿換島常用。"}]},{"id":"dongyin","name":"東引","en":"Dongyin","theme":"orange","center":[26.3655,120.49],"blurb":"東引景點沿島分布，國之北疆、東湧燈塔、一線天與中柱港可分段瀏覽。","items":[{"type":"attraction","title":"國之北疆","query":"國之北疆 東引 馬祖","lat":26.386,"lng":120.488,"note":"台灣最北端地標之一，通常是東引必訪。"},{"type":"attraction","title":"東湧燈塔","query":"東湧燈塔 東引 馬祖","lat":26.38,"lng":120.498,"note":"東引代表性燈塔景點。"},{"type":"attraction","title":"安東坑道","query":"安東坑道 東引 馬祖","lat":26.374,"lng":120.488,"note":"軍事坑道與海景景點，注意開放時間。"},{"type":"attraction","title":"一線天","query":"一線天 東引 馬祖","lat":26.367,"lng":120.499,"note":"海蝕地形景觀，行走請注意安全。"},{"type":"attraction","title":"燕秀潮音","query":"燕秀潮音 東引 馬祖","lat":26.358,"lng":120.475,"note":"東引海岸景點，可視風浪與天氣安排。"},{"type":"attraction","title":"烈女義坑","query":"烈女義坑 東引 馬祖","lat":26.356,"lng":120.482,"note":"東引海岸景點之一。"},{"type":"attraction","title":"后澳海岸","query":"后澳海岸 東引 馬祖","lat":26.352,"lng":120.488,"note":"東引南側海岸，適合順路短停。"},{"type":"food","title":"東引魚麵店（炒魚麵）","query":"東引魚麵店 炒魚麵 馬祖","lat":26.3595,"lng":120.4886,"note":"東引魚麵類小吃，適合用餐搜尋。"},{"type":"food","title":"海鮮老酒餐廳","query":"東引 海鮮 老酒 餐廳","lat":26.359,"lng":120.4895,"note":"東引合菜與老酒類餐廳備選。"},{"type":"food","title":"港口海鮮合菜餐廳","query":"中柱港 海鮮 合菜 東引","lat":26.3545,"lng":120.4933,"note":"靠近港口的用餐搜尋。"},{"type":"food","title":"東引豆花店","query":"東引 豆花","lat":26.3592,"lng":120.488,"note":"甜點小吃備選。"},{"type":"food","title":"中柱港小吃店","query":"中柱港 小吃店 東引 馬祖","lat":26.354,"lng":120.493,"note":"上船前後可搜尋的港口小吃。"},{"type":"port","title":"中柱港","query":"中柱港 東引 馬祖","lat":26.3542,"lng":120.4934,"note":"東引主要港口。"}]}];
+
+const CATEGORY = {
+  attraction: { label: "景點", dot: "attraction", icon: "📷" },
+  food: { label: "美食", dot: "food", icon: "🍜" },
+  port: { label: "港口／碼頭", dot: "port", icon: "⚓" }
+};
+
+function googleMapUrl(query){
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+function googleRouteUrl(query){
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}&travelmode=driving`;
+}
+function escapeHtml(value){
+  return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function withNumbers(island){
+  const counters = { attraction:0, food:0, port:0 };
+  return island.items.map(item => {
+    const no = item.type === "port" ? "⚓" : String(++counters[item.type]);
+    return { ...item, no };
+  });
+}
+function renderSections(){
+  const root = document.querySelector("#islands");
+  const ports = [];
+  root.innerHTML = ISLANDS.map(island => {
+    const items = withNumbers(island);
+    const grouped = ["attraction","food","port"].map(type => {
+      const groupItems = items.filter(item => item.type === type);
+      if(!groupItems.length) return "";
+      return `
+        <section class="group" data-group="${type}">
+          <h3><span>${CATEGORY[type].icon} ${island.name}${CATEGORY[type].label}</span><small>${groupItems.length} 個</small></h3>
+          <ul class="placeList">
+            ${groupItems.map(item => placeCard(item)).join("")}
+          </ul>
+        </section>`;
+    }).join("");
+    ports.push(...items.filter(item => item.type === "port").map(item => ({...item, island:island.name})));
+    return `
+      <section class="section" id="${island.id}" data-theme="${island.theme}">
+        <div class="sectionHeader">
+          <div>
+            <h2>${island.name}<small>${island.en}</small></h2>
+            <p>${island.blurb}</p>
+          </div>
+          <a class="openIsland" href="${googleMapUrl(island.name + ' 馬祖')}" target="_blank" rel="noopener">開 ${island.name} Google Maps</a>
+        </div>
+        <div class="sectionBody">
+          <div class="mapShell">
+            <div class="mapToolbar">
+              <div class="mapHint">拖曳地圖／縮放位置；點標記可開 Google Maps 或導航</div>
+              <div class="filters" role="group" aria-label="${island.name}地圖篩選">
+                <button class="active" data-island="${island.id}" data-filter="all">全部</button>
+                <button data-island="${island.id}" data-filter="attraction">景點</button>
+                <button data-island="${island.id}" data-filter="food">美食</button>
+                <button data-island="${island.id}" data-filter="port">港口</button>
+              </div>
+            </div>
+            <div class="map" id="map-${island.id}" aria-label="${island.name}地圖"></div>
+          </div>
+          <div class="legend" aria-label="圖例">
+            <span><i class="dot attraction"></i>景點</span>
+            <span><i class="dot food"></i>美食</span>
+            <span><i class="dot port"></i>港口／碼頭</span>
+          </div>
+          <p class="listIntro">下方依類型分開，現場可直接點「地圖」或「導航」。</p>
+          <div class="groupGrid">${grouped}</div>
+        </div>
+      </section>`;
+  }).join("");
+
+  document.querySelector("#portGrid").innerHTML = ports.map(port => `
+    <a href="${googleMapUrl(port.query)}" target="_blank" rel="noopener">
+      ${escapeHtml(port.title)}
+      <small>${escapeHtml(port.island)}｜開 Google Maps</small>
+    </a>
+  `).join("");
+}
+function placeCard(item){
+  const cate = CATEGORY[item.type];
+  return `
+    <li class="placeCard" data-type="${item.type}">
+      <div class="placeTop">
+        <span class="badge ${cate.dot}">${escapeHtml(item.no)}</span>
+        <p class="placeTitle">${escapeHtml(item.title)}</p>
+      </div>
+      <p class="placeNote">${escapeHtml(item.note)}</p>
+      <div class="actions">
+        <a class="mapLink" href="${googleMapUrl(item.query)}" target="_blank" rel="noopener">Google 地圖</a>
+        <a class="routeLink" href="${googleRouteUrl(item.query)}" target="_blank" rel="noopener">開始導航</a>
+      </div>
+    </li>`;
+}
+
+const mapState = new Map();
+
+function renderMapFallback(island){
+  const el = document.querySelector(`#map-${island.id}`);
+  el.classList.add("mapFallback");
+  el.innerHTML = `<div><strong>${escapeHtml(island.name)}地圖暫時無法載入</strong><p>可能是網路或地圖圖資被阻擋。仍可用下方清單直接開 Google Maps。</p><a href="${googleMapUrl(island.name + ' 馬祖')}" target="_blank" rel="noopener">開 ${escapeHtml(island.name)} Google Maps</a></div>`;
+}
+
+function initMaps(){
+  if(!window.L){
+    ISLANDS.forEach(renderMapFallback);
+    return;
+  }
+  ISLANDS.forEach(island => {
+    const items = withNumbers(island);
+    const map = L.map(`map-${island.id}`, {
+      scrollWheelZoom:false,
+      zoomControl:true,
+      tap:true
+    }).setView(island.center, 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
+    const markers = items.map(item => {
+      const cls = item.type === "attraction" ? "marker-attraction" : item.type === "food" ? "marker-food" : "marker-port";
+      const icon = L.divIcon({
+        className:`map-marker ${cls}`,
+        html:`<span>${escapeHtml(item.no)}</span>`,
+        iconSize:[34,34],
+        iconAnchor:[17,17],
+        popupAnchor:[0,-18]
+      });
+      const marker = L.marker([item.lat,item.lng], {icon});
+      marker.bindPopup(`
+        <strong>${escapeHtml(item.title)}</strong>
+        <p>${escapeHtml(item.note)}</p>
+        <div class="popupActions">
+          <a href="${googleMapUrl(item.query)}" target="_blank" rel="noopener">地圖</a>
+          <a class="route" href="${googleRouteUrl(item.query)}" target="_blank" rel="noopener">導航</a>
+        </div>
+      `);
+      marker.addTo(map);
+      return { marker, item };
+    });
+
+    const bounds = L.latLngBounds(items.map(item => [item.lat,item.lng]));
+    map.fitBounds(bounds, { padding:[34,34], maxZoom: 14 });
+    mapState.set(island.id, { map, markers });
+  });
+}
+
+function applyFilter(islandId, filter){
+  const state = mapState.get(islandId);
+  const section = document.querySelector(`#${islandId}`);
+  section.querySelectorAll(".filters button").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.filter === filter);
+  });
+  section.querySelectorAll(".placeCard").forEach(card => {
+    card.style.display = filter === "all" || card.dataset.type === filter ? "" : "none";
+  });
+  section.querySelectorAll(".group").forEach(group => {
+    const type = group.dataset.group;
+    group.style.display = filter === "all" || type === filter ? "" : "none";
+  });
+  if(!state) return;
+  const visible = [];
+  state.markers.forEach(({marker,item}) => {
+    if(filter === "all" || item.type === filter){
+      marker.addTo(state.map);
+      visible.push([item.lat,item.lng]);
+    }else{
+      marker.removeFrom(state.map);
+    }
+  });
+  if(visible.length){
+    state.map.fitBounds(L.latLngBounds(visible), { padding:[34,34], maxZoom: 15 });
+  }
+}
+
+document.addEventListener("click", event => {
+  const btn = event.target.closest(".filters button");
+  if(!btn) return;
+  applyFilter(btn.dataset.island, btn.dataset.filter);
+});
+
+renderSections();
+initMaps();
+
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    mapState.forEach(({map}) => map.invalidateSize());
+  }, 120);
+});
+</script>
 </body>
 </html>
